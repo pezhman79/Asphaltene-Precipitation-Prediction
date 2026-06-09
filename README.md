@@ -148,29 +148,6 @@ python train.py
 
 Output figures are automatically saved to the `images/` directory.
 
----
-
-## Repository Structure
-
-```
-.
-├── train.py                  # Main training and evaluation script
-├── models/
-│   ├── base_learners.py      # XGBoost, LightGBM, Extra Trees, Random Forest pipelines
-│   ├── stacking.py           # StackingRegressor with Huber meta-learner
-│   └── blending.py           # Custom BlendingRegressor with Huber meta-learner
-├── images/
-│   ├── parity.png
-│   ├── calibration.png
-│   └── importance.png
-└── README.md
-```
-
----
-
-## Citation
-
-If you use this code or methodology in your research, please cite accordingly.
 
 ---
 
