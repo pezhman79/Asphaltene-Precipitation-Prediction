@@ -146,9 +146,6 @@ pip install numpy pandas matplotlib scikit-learn xgboost lightgbm optuna shap jo
 python train.py
 ```
 
-Output figures are automatically saved to the `images/` directory.
-
-
 ---
 
 <div align="center">
