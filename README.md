@@ -123,7 +123,7 @@ Beyond pressure, the models diverge in instructive ways. In XGBoost and LightGBM
 The **ensemble models** synthesize these signals in a physically coherent way. In Stacking-Huber, pressure dominates as in the base learners, but the second tier reflects a blend of base-model perspectives: Pb retains a prominent position while temperature and API gravity also appear. Blending-Huber produces a similar profile with temperature rising to second place, suggesting this ensemble weights Extra Trees' compositional perspective slightly more heavily than stacking does. In both cases, the importance profiles are more evenly distributed across the second tier than any single base model — consistent with the physical reality that precipitation amount is governed not by pressure alone, but by the interplay of pressure dynamics with fluid composition and colloidal balance.
 
 <div align="center">
-  <img src="images/importance.png" alt="Permutation Feature Importance" width="80%"/>
+  <img src="images/permprec.png" alt="Permutation Feature Importance" width="80%"/>
   <br/>
   <sub><b>Figure 3.</b> Permutation importance for all models. Higher values indicate greater influence on predictive accuracy.</sub>
 </div>
