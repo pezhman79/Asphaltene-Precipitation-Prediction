@@ -6,6 +6,7 @@ Features: P (Psi), T (°F), Pb (Psi), °API, AS, Resin (%), Aromatic (%), Satura
 Uses KFold cross-validation to avoid data leakage.
 """
 
+import string
 import numpy as np
 import pandas as pd
 import optuna
@@ -329,6 +330,26 @@ plt.rcParams.update({
 })
 
 # ---------------------------------------------------------------------------
+# PANEL LABELING HELPER  — (a), (b), (c) ... for multi-panel journal figures
+# ---------------------------------------------------------------------------
+def label_panels(axes, offset=(-0.08, 1.10), fontsize=13,
+                  fontweight='bold', fmt='{}'):
+    """
+    Adds a, b, c... labels to each subplot in a figure (no parentheses).
+    Placed just outside the top-left corner of each axes (above the plot
+    area), so it never overlaps in-plot legends, R² boxes, or bars.
+    axes: flattened array/list of Axes objects, in the order you want lettered.
+    Call this AFTER the per-panel plotting loop and BEFORE plt.tight_layout().
+    """
+    letters = string.ascii_lowercase
+    for i, ax in enumerate(axes):
+        label = fmt.format(letters[i])
+        ax.text(offset[0], offset[1], label,
+                transform=ax.transAxes,
+                fontsize=fontsize, fontweight=fontweight,
+                va='bottom', ha='left')
+
+# ---------------------------------------------------------------------------
 # PALETTE
 # ---------------------------------------------------------------------------
 MODEL_NAMES   = ['XGBoost', 'RandomForest', 'LightGBM', 'ExtraTrees',
@@ -384,13 +405,14 @@ for idx, (mname, mlabel, col, mkr) in enumerate(
             bbox=dict(boxstyle='round,pad=0.3', fc='white', ec='0.7', alpha=0.85))
     ax.set_aspect('equal', adjustable='box')
 
+label_panels(axes)
 fig.suptitle('Parity Plots — Asphaltene Precipitation (%) — All Models',
              fontsize=11, fontweight='bold', y=1.01)
 plt.tight_layout()
 plt.savefig('fig1a_parity_individual.png')
 plt.show()
 
-# ---- 1b) All models overlaid ----
+# ---- 1b) All models overlaid (single panel — no letter needed) ----
 fig, ax = plt.subplots(figsize=(6, 5.5))
 all_vals = np.concatenate([y_true] + list(preds_dict.values()))
 lims = [all_vals.min() * 0.97, all_vals.max() * 1.03]
@@ -455,13 +477,14 @@ for idx, (mname, mlabel, col, mkr) in enumerate(
     ax.set_title(mlabel)
     ax.legend(fontsize=8)
 
+label_panels(axes)
 fig.suptitle('Calibration Plots — Asphaltene Precipitation (%) — All Models',
              fontsize=11, fontweight='bold', y=1.01)
 plt.tight_layout()
 plt.savefig('fig2a_calibration_individual.png')
 plt.show()
 
-# ---- 2b) All models combined ----
+# ---- 2b) All models combined (single panel) ----
 fig, ax = plt.subplots(figsize=(6, 5.5))
 all_xp = np.concatenate([_calibration_data(y_true, preds_dict[m])[0] for m in MODEL_NAMES])
 all_yo = np.concatenate([_calibration_data(y_true, preds_dict[m])[1] for m in MODEL_NAMES])
@@ -521,13 +544,14 @@ for idx, (mname, mlabel, col) in enumerate(
         ax.text(v + imp.max() * 0.01, bar.get_y() + bar.get_height() / 2,
                 f'{v:.3f}', va='center', ha='left', fontsize=7)
 
+label_panels(axes)
 fig.suptitle('Feature Importance — Base Models (Asphaltene Precipitation)',
              fontsize=11, fontweight='bold', y=1.01)
 plt.tight_layout()
 plt.savefig('fig3a_feat_importance_individual.png')
 plt.show()
 
-# ---- 3b) All base models side-by-side grouped bar ----
+# ---- 3b) All base models side-by-side grouped bar (single panel) ----
 top_k = min(12, len(feature_names))
 mean_imp = np.mean([feat_importance[m] for m in base_model_names], axis=0)
 top_idx  = np.argsort(mean_imp)[-top_k:][::-1]
@@ -592,13 +616,14 @@ for idx, (mname, mlabel, col) in enumerate(
     ax.set_title(mlabel)
     ax.xaxis.set_major_locator(MaxNLocator(4))
 
+label_panels(axes)
 fig.suptitle('Permutation Importance — Asphaltene Precipitation (%) — All Models',
              fontsize=11, fontweight='bold', y=1.01)
 plt.tight_layout()
 plt.savefig('fig4a_perm_importance_individual.png')
 plt.show()
 
-# ---- 4b) All models side-by-side grouped bar (top N by mean) ----
+# ---- 4b) All models side-by-side grouped bar (top N by mean, single panel) ----
 top_k  = min(10, len(feature_names))   # ← fixed: can't exceed actual feature count
 mean_pi = np.mean([perm_results[m] for m in MODEL_NAMES], axis=0)
 top_idx = np.argsort(mean_pi)[-top_k:][::-1]
@@ -634,7 +659,7 @@ mape_vals = {}
 for mname in MODEL_NAMES:
     mape_vals[mname] = mean_absolute_percentage_error(y_true, preds_dict[mname]) * 100.0
 
-# ---- 5a) Grouped bar ----
+# ---- 5a) Grouped bar (single panel) ----
 fig, ax = plt.subplots(figsize=(8, 4.5))
 x_pos = np.arange(len(MODEL_NAMES))
 bars  = ax.bar(x_pos, [mape_vals[m] for m in MODEL_NAMES],
@@ -653,7 +678,7 @@ plt.tight_layout()
 plt.savefig('fig5a_mape_comparison.png')
 plt.show()
 
-# ---- 5b) Horizontal lollipop chart ----
+# ---- 5b) Horizontal lollipop chart (single panel) ----
 fig, ax = plt.subplots(figsize=(7, 4.5))
 sorted_idx    = np.argsort([mape_vals[m] for m in MODEL_NAMES])
 sorted_names  = [MODEL_NAMES[i]  for i in sorted_idx]
@@ -706,6 +731,7 @@ for idx, (mname, mlabel, col) in enumerate(
     for i, v in enumerate(out['MAPE']):
         ax.text(v + 0.1, i, f'{v:.1f}%', va='center', fontsize=7.5)
 
+label_panels(axes)
 fig.suptitle('MAPE by AS Precipitation Range (Quantile Bins) — All Models',
              fontsize=11, fontweight='bold', y=1.01)
 plt.tight_layout()
@@ -834,20 +860,21 @@ for idx, (mname, mlabel, col, mkr) in enumerate(
             max(y_true.max(), ypred.max()) * 1.03]
     ax.plot(lims, lims, 'k--', lw=0.9, zorder=0)
     ax.set_xlim(lims); ax.set_ylim(lims)
-    ax.set_xlabel('Observed AOP (psia)')
-    ax.set_ylabel('Predicted AOP (psia)')
+    ax.set_xlabel('Observed AS Precipitation (%)')
+    ax.set_ylabel('Predicted AS Precipitation (%)')
     ax.set_title(mlabel)
     ax.text(0.05, 0.92, f'$R^2$ = {r2:.3f}',
             transform=ax.transAxes, fontsize=9,
             bbox=dict(boxstyle='round,pad=0.3', fc='white', ec='0.7', alpha=0.85))
     ax.set_aspect('equal', adjustable='box')
 
+label_panels(axes)
 fig.suptitle('Parity Plots — All Models (Loaded)', fontsize=11, fontweight='bold', y=1.01)
 plt.tight_layout()
 plt.savefig('fig1a_parity_individual_loaded.png')
 plt.show()
 
-# ---- 1b) همه در یک نمودار ----
+# ---- 1b) همه در یک نمودار (تک پنل) ----
 fig, ax = plt.subplots(figsize=(6, 5.5))
 all_vals = np.concatenate([y_true] + list(preds_dict.values()))
 lims = [all_vals.min() * 0.97, all_vals.max() * 1.03]
@@ -862,8 +889,8 @@ for mname, mlabel, col, mkr in zip(MODEL_NAMES, MODEL_LABELS, COLORS, MARKERS):
                label=f'{mlabel}  ($R^2$={r2:.3f})')
 
 ax.set_xlim(lims); ax.set_ylim(lims)
-ax.set_xlabel('Observed AOP (psia)')
-ax.set_ylabel('Predicted AOP (psia)')
+ax.set_xlabel('Observed AAS Precipitation (%)')
+ax.set_ylabel('Predicted AS Precipitation (%)')
 ax.set_title('Parity Plot — All Models Combined (Loaded)')
 ax.legend(loc='upper left', fontsize=7.5)
 ax.set_aspect('equal', adjustable='box')
@@ -896,18 +923,19 @@ for idx, (mname, mlabel, col, mkr) in enumerate(
     ax.plot(xp, yo, color=col, marker=mkr, ms=6, lw=1.2, label=mlabel)
 
     ax.set_xlim(lims); ax.set_ylim(lims)
-    ax.set_xlabel('Mean Predicted AOP (psia)')
-    ax.set_ylabel('Mean Observed AOP (psia)')
+    ax.set_xlabel('Mean Predicted AS Precipitation (%)')
+    ax.set_ylabel('Mean Observed AS Precipitation (%)')
     ax.set_title(mlabel)
     ax.legend(fontsize=8)
 
+label_panels(axes)
 fig.suptitle('Calibration Plots — All Models (Loaded)',
              fontsize=11, fontweight='bold', y=1.01)
 plt.tight_layout()
 plt.savefig('fig2a_calibration_individual_loaded.png')
 plt.show()
 
-# ---- 2b) همه در یک نمودار ----
+# ---- 2b) همه در یک نمودار (تک پنل) ----
 fig, ax = plt.subplots(figsize=(6, 5.5))
 all_xp = np.concatenate([_calibration_data(y_true, preds_dict[m])[0] for m in MODEL_NAMES])
 all_yo = np.concatenate([_calibration_data(y_true, preds_dict[m])[1] for m in MODEL_NAMES])
@@ -920,8 +948,8 @@ for mname, mlabel, col, mkr in zip(MODEL_NAMES, MODEL_LABELS, COLORS, MARKERS):
     ax.plot(xp, yo, color=col, marker=mkr, ms=5, lw=1.1, label=mlabel)
 
 ax.set_xlim(lims); ax.set_ylim(lims)
-ax.set_xlabel('Mean Predicted AOP (psia)')
-ax.set_ylabel('Mean Observed AOP (psia)')
+ax.set_xlabel('Mean Predicted AS Precipitation (%)')
+ax.set_ylabel('Mean Observed AS Precipitation (%)')
 ax.set_title('Calibration Plot — All Models Combined (Loaded)')
 ax.legend(fontsize=7.5)
 ax.set_aspect('equal', adjustable='box')
@@ -960,12 +988,13 @@ for idx, (mname, mlabel, col) in enumerate(
         ax.text(v + imp.max() * 0.01, bar.get_y() + bar.get_height() / 2,
                 f'{v:.3f}', va='center', ha='left', fontsize=7)
 
+label_panels(axes)
 fig.suptitle('Feature Importance — Base Models (Loaded)', fontsize=11, fontweight='bold', y=1.01)
 plt.tight_layout()
 plt.savefig('fig3a_feat_importance_individual_loaded.png')
 plt.show()
 
-# ---- 3b) مقایسه‌ای ----
+# ---- 3b) مقایسه‌ای (تک پنل) ----
 top_k  = min(10, len(feature_names))   # ← fixed: can't exceed actual feature count
 mean_pi = np.mean([perm_results[m] for m in MODEL_NAMES], axis=0)
 top_idx = np.argsort(mean_pi)[-top_k:][::-1]
@@ -1024,13 +1053,14 @@ for idx, (mname, mlabel, col) in enumerate(
     ax.set_title(mlabel)
     ax.xaxis.set_major_locator(MaxNLocator(4))
 
+label_panels(axes)
 fig.suptitle('Permutation Importance — All Models (Loaded)',
              fontsize=11, fontweight='bold', y=1.01)
 plt.tight_layout()
 plt.savefig('fig4a_perm_importance_individual_loaded.png')
 plt.show()
 
-# ---- 4b) مقایسه‌ای ----
+# ---- 4b) مقایسه‌ای (تک پنل) ----
 top_k  = 10
 mean_pi = np.mean([perm_results[m] for m in MODEL_NAMES], axis=0)
 top_idx = np.argsort(mean_pi)[-top_k:][::-1]
@@ -1066,7 +1096,7 @@ mape_vals = {}
 for mname in MODEL_NAMES:
     mape_vals[mname] = mean_absolute_percentage_error(y_true, preds_dict[mname]) * 100.0
 
-# ---- 5a) میله‌ای گروهی ----
+# ---- 5a) میله‌ای گروهی (تک پنل) ----
 fig, ax = plt.subplots(figsize=(8, 4.5))
 x_pos  = np.arange(len(MODEL_NAMES))
 bars   = ax.bar(x_pos, [mape_vals[m] for m in MODEL_NAMES],
@@ -1087,7 +1117,7 @@ plt.tight_layout()
 plt.savefig('fig5a_mape_comparison_loaded.png')
 plt.show()
 
-# ---- 5b) نمودار آبنباتی (lollipop) ----
+# ---- 5b) نمودار آبنباتی (lollipop) (تک پنل) ----
 fig, ax = plt.subplots(figsize=(7, 4.5))
 sorted_idx   = np.argsort([mape_vals[m] for m in MODEL_NAMES])
 sorted_names = [MODEL_NAMES[i]  for i in sorted_idx]
@@ -1142,7 +1172,8 @@ for idx, (mname, mlabel, col) in enumerate(
     for i, v in enumerate(out['MAPE']):
         ax.text(v + 0.1, i, f'{v:.1f}%', va='center', fontsize=7.5)
 
-fig.suptitle('MAPE by AOP Range (Quantile Bins) — All Models (Loaded)',
+label_panels(axes)
+fig.suptitle('MAPE by AS Precipitation (%) Range (Quantile Bins) — All Models (Loaded)',
              fontsize=11, fontweight='bold', y=1.01)
 plt.tight_layout()
 plt.savefig('fig6_mape_by_range_individual_loaded.png')
@@ -1177,7 +1208,7 @@ for mname in MODEL_NAMES:
 mae_vals = [metric_vals[m]['MAE'] for m in MODEL_NAMES]
 r2_vals  = [metric_vals[m]['R2']  for m in MODEL_NAMES]
 
-# ---- 5a) نمودار میله‌ای دوگانه (MAE + R²) ----
+# ---- 5a) نمودار میله‌ای دوگانه (MAE + R²) — دو پنل عمودی، هر پنل حرف می‌گیرد ----
 fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(9, 7), sharex=True,
                                 gridspec_kw={'hspace': 0.08})
 x_pos = np.arange(len(MODEL_NAMES))
@@ -1227,12 +1258,13 @@ ax2.axhline(max(r2_vals), color='green', linewidth=0.8,
 ax2.legend(fontsize=8, loc='lower right')
 ax2.spines['top'].set_visible(False)
 
+label_panels([ax1, ax2])
 plt.tight_layout()
 plt.savefig('fig5a_mae_r2_bars.png', dpi=150)
 plt.show()
 
 
-# ---- 5b) نمودار آبنباتی ترکیبی (Lollipop) — مرتب‌شده بر اساس MAE ----
+# ---- 5b) نمودار آبنباتی ترکیبی (Lollipop) — مرتب‌شده بر اساس MAE — دو پنل افقی ----
 fig, axes = plt.subplots(1, 2, figsize=(13, 5))
 fig.suptitle('Model Ranking — MAE & R² (Sorted)', fontsize=12, fontweight='bold', y=1.01)
 
@@ -1290,9 +1322,7 @@ ax.spines['left'].set_visible(False)
 ax.tick_params(left=False)
 ax.xaxis.set_major_formatter(plt.FormatStrFormatter('%.3f'))
 
+label_panels(axes)
 plt.tight_layout()
 plt.savefig('fig5b_mae_r2_lollipop.png', dpi=150, bbox_inches='tight')
 plt.show()
-
-
-
